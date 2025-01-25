@@ -1,0 +1,7 @@
+machine:
+  kubelet:
+    extraArgs:
+      cloud-provider: external
+  nodeLabels:
+    topology.kubernetes.io/region: hl1r1
+    topology.kubernetes.io/zone: pve

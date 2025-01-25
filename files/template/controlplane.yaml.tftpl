@@ -1,0 +1,201 @@
+machine:
+  network:
+    interfaces:
+      - interface: eth0
+        vip:
+          ip: ${vip}
+  time:
+    servers:
+      - 194.190.168.1
+      - ntp0.ntp-servers.net
+      - ntp1.ntp-servers.net
+      - ntp2.ntp-servers.net
+  kernel:
+    modules:
+      - name: br_netfilter
+        parameters:
+          - nf_conntrack_max=262144
+cluster:
+  network:
+    cni:
+      name: none
+  proxy:
+    disabled: true
+  externalCloudProvider:
+    enabled: true
+    manifests:
+      - https://raw.githubusercontent.com/sergelogvinov/proxmox-cloud-controller-manager/main/docs/deploy/cloud-controller-manager.yml
+      - https://raw.githubusercontent.com/sergelogvinov/proxmox-csi-plugin/main/docs/deploy/proxmox-csi-plugin.yml
+  inlineManifests:
+  - name: proxmox-cloud-controller-manager
+    contents: |-
+      apiVersion: v1
+      kind: Secret
+      type: Opaque
+      metadata:
+        name: proxmox-cloud-controller-manager
+        namespace: kube-system
+      stringData:
+        config.yaml: |
+          clusters:
+            - url: https://${pve_node}:8006/api2/json
+              insecure: true
+              token_id: "${csi_id}"
+              token_secret: "${csi_secret}"
+              region: hl1r1
+  - name: proxmox-csi-plugin
+    contents: |-
+      apiVersion: v1
+      kind: Secret
+      type: Opaque
+      metadata:
+        name: proxmox-csi-plugin
+        namespace: csi-proxmox
+      stringData:
+        config.yaml: |
+          clusters:
+            - url: https://${pve_node}:8006/api2/json
+              insecure: true
+              token_id: "${csi_id}"
+              token_secret: "${csi_secret}"
+              region: hl1r1
+  - name: sc-nvme
+    contents: |-
+      apiVersion: storage.k8s.io/v1
+      kind: StorageClass
+      metadata:
+        name: nvme
+      provisioner: csi.proxmox.sinextra.dev
+      allowVolumeExpansion: true
+      volumeBindingMode: WaitForFirstConsumer
+      reclaimPolicy: Delete
+      parameters: 
+        csi.storage.k8s.io/fstype: ext4
+        storage: p0_nvme
+        ssd: "true"
+  - name: sc-hdd
+    contents: |-
+      apiVersion: storage.k8s.io/v1
+      kind: StorageClass
+      metadata:
+        name: hdd
+      provisioner: csi.proxmox.sinextra.dev
+      allowVolumeExpansion: true
+      volumeBindingMode: WaitForFirstConsumer
+      reclaimPolicy: Delete
+      parameters:
+        csi.storage.k8s.io/fstype: ext4
+        storage: p0_hdd
+    - name: sc-ssd
+    contents: |-
+      apiVersion: storage.k8s.io/v1
+      kind: StorageClass
+      metadata:
+        name: ssd
+      provisioner: csi.proxmox.sinextra.dev
+      allowVolumeExpansion: true
+      volumeBindingMode: WaitForFirstConsumer
+      reclaimPolicy: Delete
+      parameters: 
+        csi.storage.k8s.io/fstype: ext4
+        storage: p0_ssd
+        ssd: "true"
+  - name: cilium-ns
+    contents: |- 
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: cilium
+        labels:
+          pod-security.kubernetes.io/enforce: "privileged"
+  - name: metallb-ns
+    contents: |-
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: metallb-system
+        labels:
+          pod-security.kubernetes.io/enforce: "privileged"
+          pod-security.kubernetes.io/audit: "privileged"
+          pod-security.kubernetes.io/warn: "privileged"
+  - name: ingress-ns
+    contents: |-
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: ingress-nginx
+  - name: cert-manager-ns
+    contents: |-
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: cert-manager
+  - name: metallb-addresspool
+    contents: |-
+      apiVersion: metallb.io/v1beta1
+      kind: IPAddressPool
+      metadata:
+        name: pool-vlan${vlan_id}
+        namespace: metallb-system
+      spec:
+        addresses:
+        - ${addresses}
+  - name: metallb-l2adv
+    contents: |-
+      apiVersion: metallb.io/v1beta1
+      kind: L2Advertisement
+      metadata:
+        name: l2-pool-vlan${vlan_id}
+        namespace: metallb-system
+      spec:
+        ipAddressPools:
+        - pool-vlan${vlan_id}
+  - name: cloudflare-secret
+    contents: |-
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: cf-token
+        namespace: cert-manager
+      type: Opaque
+      stringData:
+        token: "${cf_token}"
+  - name: issuer
+    contents: |-
+      apiVersion: cert-manager.io/v1
+      kind: ClusterIssuer
+      metadata:
+        name: letsencrypt
+      spec:
+        acme:
+          server: https://acme-v02.api.letsencrypt.org/directory
+          email: root@${ingress_domain}
+          privateKeySecretRef:
+            name: ingress-cert
+          solvers:
+            - dns01:
+                cloudflare:
+                  email: root@${ingress_domain}
+                  apiTokenSecretRef:
+                    name: cf-token
+                    key: token
+              selector:
+                dnsZones:
+                  - "*.${ingress_domain}"
+                  - "${ingress_domain}"
+  - name: certificate
+    contents: |-
+      apiVersion: cert-manager.io/v1
+      kind: Certificate
+      metadata:
+        name: ingress-cert
+        namespace: cert-manager
+      spec:
+        secretName: ingress-cert
+        issuerRef:
+          name: letsencrypt
+          kind: ClusterIssuer
+        commonName: "*.${ingress_domain}"
+        dnsNames:
+        - "*.${ingress_domain}"
+        - "${ingress_domain}"
