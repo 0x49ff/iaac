@@ -6,6 +6,7 @@ variable "pve" {
       "username"          = ""
       "private_key"       = ""
       "node_name"         = ""
+      "name_prefix"       = ""
       "storage_disks"     = ""
       "storage_cloudinit" = ""
       "domain"            = ""

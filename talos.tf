@@ -14,9 +14,9 @@ data "talos_machine_configuration" "controlplane" {
     vlan_id        = var.pve.vlan_id
     cf_token       = var.cloudflare.token
     ingress_domain = var.kubernetes.ingress_domain
+    pve_node       = var.pve.endpoint
     csi_id         = var.pve.csi_id
     csi_secret     = var.pve.csi_secret
-    pve_node       = var.pve.node_name
   })]
 }
 
@@ -61,7 +61,7 @@ resource "talos_machine_bootstrap" "this" {
 }
 
 data "talos_cluster_health" "available" {
-  depends_on = [ resource.proxmox_virtual_environment_vm.controlplane, resource.proxmox_virtual_environment_vm.worker ]
+  depends_on = [ resource.proxmox_virtual_environment_vm.controlplane, resource.proxmox_virtual_environment_vm.worker, resource.talos_machine_bootstrap.this ]
   
   client_configuration    = talos_machine_secrets.this.client_configuration
   control_plane_nodes     = local.cp_ip

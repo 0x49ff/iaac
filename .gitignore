@@ -16,6 +16,7 @@ crash.*.log
 *.tfvars
 *.tfvars.json
 *state.config
+*.config
 
 # Ignore override files as they are usually used to override resources locally and so
 # are not checked in
@@ -40,3 +41,5 @@ terraform.rc
 
 # etc
 files/id_rsa
+kubeconfig
+talosconfig

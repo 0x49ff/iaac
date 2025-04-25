@@ -4,7 +4,7 @@ resource "proxmox_virtual_environment_download_file" "talos_image" {
   node_name               = var.pve.node_name
 
   url                     = "https://factory.talos.dev/image/6adc7e7fba27948460e2231e5272e88b85159da3f3db980551976bf9898ff64b/v1.9.1/nocloud-amd64.raw.gz"
-  file_name               = "talos-nocloud-amd64.img"
+  file_name               = "talos-nocloud-amd64-${var.talos.version}.img"
   overwrite               = true
   decompression_algorithm = "gz"
 }
@@ -12,7 +12,7 @@ resource "proxmox_virtual_environment_download_file" "talos_image" {
 // controlplane vm
 resource "proxmox_virtual_environment_vm" "controlplane" {
   count       = var.talos.cp_count
-  name        = "cp${count.index + 1}ct"
+  name        = "cp${count.index + 1}${var.pve.name_prefix}"
   tags        = ["talos", "${var.talos.cluster_name}"]
   node_name   = var.pve.node_name
   vm_id       = var.pve.vm_id + count.index
@@ -32,6 +32,7 @@ resource "proxmox_virtual_environment_vm" "controlplane" {
     discard      = "on"
     ssd          = true
     interface    = "scsi0"
+    size         = 50
   }
 
   network_device {
@@ -67,13 +68,13 @@ resource "proxmox_virtual_environment_vm" "worker" {
   depends_on = [ resource.proxmox_virtual_environment_vm.controlplane ]
 
   count       = var.talos.worker_count
-  name        = "worker${count.index + 1}ct"
+  name        = "worker${count.index + 1}${var.pve.name_prefix}"
   tags        = ["talos", "${var.talos.cluster_name}"]
   node_name   = var.pve.node_name
   vm_id       = var.pve.vm_id + count.index + var.talos.cp_count
 
   cpu {
-    cores        = 8
+    cores        = 4
     type         = "x86-64-v2-AES"
   }
 
@@ -87,6 +88,7 @@ resource "proxmox_virtual_environment_vm" "worker" {
     discard      = "on"
     ssd          = true
     interface    = "scsi0"
+    size         = 50
   }
 
   network_device {

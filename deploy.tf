@@ -99,18 +99,3 @@ resource "cloudflare_record" "cname" {
   ttl     = 3600
   proxied = false
 }
-
-resource "helm_release" "cert-manager" {
-  depends_on = [ resource.cloudflare_record.a, resource.cloudflare_record.cname, resource.helm_release.ingress_nginx ]
-
-  namespace  = "cert-manager"
-  name       = "cert-manager"
-  repository = "https://charts.jetstack.io"
-  chart      = "cert-manager"
-  version    = "v1.16.2"
-
-  set {
-    name     = "crds.enabled"
-    value    = "true"
-  }
-}

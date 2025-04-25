@@ -64,7 +64,7 @@ cluster:
       apiVersion: storage.k8s.io/v1
       kind: StorageClass
       metadata:
-        name: nvme
+        name: proxmox-nvme
       provisioner: csi.proxmox.sinextra.dev
       allowVolumeExpansion: true
       volumeBindingMode: WaitForFirstConsumer
@@ -78,7 +78,7 @@ cluster:
       apiVersion: storage.k8s.io/v1
       kind: StorageClass
       metadata:
-        name: hdd
+        name: proxmox-hdd
       provisioner: csi.proxmox.sinextra.dev
       allowVolumeExpansion: true
       volumeBindingMode: WaitForFirstConsumer
@@ -86,20 +86,6 @@ cluster:
       parameters:
         csi.storage.k8s.io/fstype: ext4
         storage: p0_hdd
-    - name: sc-ssd
-    contents: |-
-      apiVersion: storage.k8s.io/v1
-      kind: StorageClass
-      metadata:
-        name: ssd
-      provisioner: csi.proxmox.sinextra.dev
-      allowVolumeExpansion: true
-      volumeBindingMode: WaitForFirstConsumer
-      reclaimPolicy: Delete
-      parameters: 
-        csi.storage.k8s.io/fstype: ext4
-        storage: p0_ssd
-        ssd: "true"
   - name: cilium-ns
     contents: |- 
       apiVersion: v1
@@ -150,52 +136,3 @@ cluster:
       spec:
         ipAddressPools:
         - pool-vlan${vlan_id}
-  - name: cloudflare-secret
-    contents: |-
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: cf-token
-        namespace: cert-manager
-      type: Opaque
-      stringData:
-        token: "${cf_token}"
-  - name: issuer
-    contents: |-
-      apiVersion: cert-manager.io/v1
-      kind: ClusterIssuer
-      metadata:
-        name: letsencrypt
-      spec:
-        acme:
-          server: https://acme-v02.api.letsencrypt.org/directory
-          email: root@${ingress_domain}
-          privateKeySecretRef:
-            name: ingress-cert
-          solvers:
-            - dns01:
-                cloudflare:
-                  email: root@${ingress_domain}
-                  apiTokenSecretRef:
-                    name: cf-token
-                    key: token
-              selector:
-                dnsZones:
-                  - "*.${ingress_domain}"
-                  - "${ingress_domain}"
-  - name: certificate
-    contents: |-
-      apiVersion: cert-manager.io/v1
-      kind: Certificate
-      metadata:
-        name: ingress-cert
-        namespace: cert-manager
-      spec:
-        secretName: ingress-cert
-        issuerRef:
-          name: letsencrypt
-          kind: ClusterIssuer
-        commonName: "*.${ingress_domain}"
-        dnsNames:
-        - "*.${ingress_domain}"
-        - "${ingress_domain}"

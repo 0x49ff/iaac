@@ -21,6 +21,7 @@ terraform {
   backend "s3" {
     bucket     = ""
     key        = ""
+    workspace_key_prefix = ""
 
     endpoints = {}
 
