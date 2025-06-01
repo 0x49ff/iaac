@@ -1,26 +1,26 @@
 terraform {
   required_providers {
-    talos = {
-      source = "siderolabs/talos"
-      version = "0.7.0"
-    }
     proxmox = {
-      source = "bpg/proxmox"
-      version = "0.70.0"
+      source  = "bpg/proxmox"
+      version = "~> 0.70.0"
+    }
+    talos = {
+      source  = "siderolabs/talos"
+      version = "~> 0.7.0"
     }
     helm = {
-      source = "hashicorp/helm"
-      version = "2.17.0"
+      source  = "hashicorp/helm"
+      version = "~> 2.17.0"
     }
     cloudflare = {
-      source = "cloudflare/cloudflare"
-      version = "4.50.0"
+      source  = "cloudflare/cloudflare"
+      version = "~> 4.50.0"
     }
   }
-  
+
   backend "s3" {
-    bucket     = ""
-    key        = ""
+    bucket               = ""
+    key                  = ""
     workspace_key_prefix = ""
 
     endpoints = {}
@@ -37,14 +37,14 @@ terraform {
 }
 
 provider "proxmox" {
-    endpoint  = "https://${var.pve.endpoint}:8006/"
-    api_token = var.pve.api_token
-    insecure  = true
-    
-    ssh {
-        username = var.pve.username
-        private_key = file(var.pve.private_key)
-    }
+  endpoint  = "https://${var.pve.endpoint}:8006/"
+  api_token = var.pve.api_token
+  insecure  = true
+
+  ssh {
+    username    = var.pve.username
+    private_key = file(var.pve.private_key)
+  }
 }
 
 provider "helm" {

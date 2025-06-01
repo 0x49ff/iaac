@@ -42,7 +42,7 @@ cluster:
               insecure: true
               token_id: "${csi_id}"
               token_secret: "${csi_secret}"
-              region: hl1r1
+              region: "${region}"
   - name: proxmox-csi-plugin
     contents: |-
       apiVersion: v1
@@ -58,34 +58,27 @@ cluster:
               insecure: true
               token_id: "${csi_id}"
               token_secret: "${csi_secret}"
-              region: hl1r1
-  - name: sc-nvme
+              region: "${region}"
+%{ if length(storage_classes) > 0 ~}
+%{ for sc in storage_classes ~}
+  - name: sc-${sc.name}
     contents: |-
       apiVersion: storage.k8s.io/v1
       kind: StorageClass
       metadata:
-        name: proxmox-nvme
-      provisioner: csi.proxmox.sinextra.dev
-      allowVolumeExpansion: true
-      volumeBindingMode: WaitForFirstConsumer
-      reclaimPolicy: Delete
-      parameters: 
-        csi.storage.k8s.io/fstype: ext4
-        storage: p0_nvme
-        ssd: "true"
-  - name: sc-hdd
-    contents: |-
-      apiVersion: storage.k8s.io/v1
-      kind: StorageClass
-      metadata:
-        name: proxmox-hdd
+        name: proxmox-${sc.name}
       provisioner: csi.proxmox.sinextra.dev
       allowVolumeExpansion: true
       volumeBindingMode: WaitForFirstConsumer
       reclaimPolicy: Delete
       parameters:
-        csi.storage.k8s.io/fstype: ext4
-        storage: p0_hdd
+        csi.storage.k8s.io/fstype: ${try(sc.fstype, "ext4")}
+        storage: ${sc.storage}
+%{ if try(sc.type, "") == "ssd" ~}
+        ssd: "true"
+%{ endif ~}
+%{ endfor ~}
+%{ endif ~}
   - name: cilium-ns
     contents: |- 
       apiVersion: v1
@@ -110,18 +103,12 @@ cluster:
       kind: Namespace
       metadata:
         name: ingress-nginx
-  - name: cert-manager-ns
-    contents: |-
-      apiVersion: v1
-      kind: Namespace
-      metadata:
-        name: cert-manager
   - name: metallb-addresspool
     contents: |-
       apiVersion: metallb.io/v1beta1
       kind: IPAddressPool
       metadata:
-        name: pool-vlan${vlan_id}
+        name: pool-default
         namespace: metallb-system
       spec:
         addresses:
@@ -131,8 +118,8 @@ cluster:
       apiVersion: metallb.io/v1beta1
       kind: L2Advertisement
       metadata:
-        name: l2-pool-vlan${vlan_id}
+        name: l2-pool-default
         namespace: metallb-system
       spec:
         ipAddressPools:
-        - pool-vlan${vlan_id}
+        - pool-default

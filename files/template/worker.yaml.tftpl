@@ -3,5 +3,5 @@ machine:
     extraArgs:
       cloud-provider: external
   nodeLabels:
-    topology.kubernetes.io/region: hl1r1
-    topology.kubernetes.io/zone: pve
+    topology.kubernetes.io/region: ${region}
+    topology.kubernetes.io/zone: ${zone}
