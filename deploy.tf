@@ -1,17 +1,17 @@
 resource "helm_release" "cilium" {
-  depends_on = [ data.talos_cluster_health.available ]
+  depends_on = [data.talos_cluster_health.available]
 
   namespace  = "cilium"
   name       = "cilium"
   repository = "https://helm.cilium.io"
   chart      = "cilium"
-  version    = "1.16.4"
+  version    = var.kubernetes.cilium_version
 
   set {
     name  = "ipam.mode"
     value = "kubernetes"
   }
-  
+
   set {
     name  = "kubeProxyReplacement"
     value = "true"
@@ -39,7 +39,7 @@ resource "helm_release" "cilium" {
 
   set {
     name  = "k8sServiceHost"
-    value = "localhost"  
+    value = "localhost"
   }
 
   set {
@@ -50,35 +50,35 @@ resource "helm_release" "cilium" {
 }
 
 resource "helm_release" "metallb" {
-  depends_on  = [ resource.helm_release.cilium ]
+  depends_on = [resource.helm_release.cilium]
 
-  namespace   = "metallb-system"
-  name        = "metallb"
-  repository  = "https://metallb.github.io/metallb"
-  chart       = "metallb"
-  version     = "0.14.9"
+  namespace  = "metallb-system"
+  name       = "metallb"
+  repository = "https://metallb.github.io/metallb"
+  chart      = "metallb"
+  version    = var.kubernetes.metallb_version
 }
 
 resource "helm_release" "ingress_nginx" {
-  depends_on  = [ resource.helm_release.metallb ]
+  depends_on = [resource.helm_release.metallb]
 
-  namespace   = "ingress-nginx"
-  name        = "ingress-nginx"
-  repository  = "https://kubernetes.github.io/ingress-nginx"
-  chart       = "ingress-nginx"
-  version     = "4.12.0"
+  namespace  = "ingress-nginx"
+  name       = "ingress-nginx"
+  repository = "https://kubernetes.github.io/ingress-nginx"
+  chart      = "ingress-nginx"
+  version    = var.kubernetes.nginx_version
 
   set {
-    name      = "controller.replicaCount"
-    value     = "3"
+    name  = "controller.replicaCount"
+    value = "3"
   }
   set {
-    name      = "controller.service.loadBalancerIP"
-    value     = var.kubernetes.ingress_lb
+    name  = "controller.service.loadBalancerIP"
+    value = var.kubernetes.ingress_lb
   }
   set {
-    name      = "controller.allowSnipperAnnotations"
-    value     = true
+    name  = "controller.allowSnippetAnnotations"
+    value = true
   }
 }
 

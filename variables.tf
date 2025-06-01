@@ -1,53 +1,72 @@
 variable "pve" {
-    type = map(string)
-    default = {
-      "endpoint"          = ""
-      "api_token"         = ""
-      "username"          = ""
-      "private_key"       = ""
-      "node_name"         = ""
-      "name_prefix"       = ""
-      "storage_disks"     = ""
-      "storage_cloudinit" = ""
-      "domain"            = ""
-      "dns_server"        = ""
-      "vlan_id"           = ""
-      "gateway"           = ""
-      "cidr"              = ""
-      "csi_id"            = ""
-      "csi_secret"        = ""
-    }
+  type = object({
+    endpoint          = string
+    api_token         = string
+    username          = string
+    private_key       = string
+    node_name         = string
+    cluster_name      = string
+    name_prefix       = string
+    vm_id             = string
+    storage_disks     = string
+    storage_cloudinit = string
+    cp_mem            = number
+    worker_mem        = number
+    dns_domain        = string
+    dns_server        = string
+    vlan_id           = number
+    gateway           = string
+    cidr              = string
+    csi_id            = string
+    csi_secret        = string
+  })
 }
 
 variable "talos" {
-    type = map(string)
-    default = {
-      "cluster_name"    = ""
-      "cp_count"        = ""
-      "worker_count"    = ""
-      "cp_octet"        = ""
-      "worker_octet"    = "" // cp_octet + cp_count
-      "cp_mem"          = ""
-      "worker_mem"      = ""
-      "endpoint"        = ""
-      "vip"             = ""
-      "environment"     = ""
-    }
+  type = object({
+    cluster_name = string
+    cp_count     = number
+    worker_count = number
+    cp_octet     = number
+    worker_octet = number
+    endpoint     = string
+    vip          = string
+    version      = string
+  })
 }
 
 variable "kubernetes" {
-  type = map(string)
-  default = {
-    "lb_addresspool"    = ""
-    "ingress_domain"    = ""
-    "ingress_lb"        = ""
-  }
+  type = object({
+    lb_addresspool  = string
+    ingress_domain  = string
+    ingress_lb      = string
+    cilium_version  = string
+    nginx_version   = string
+    metallb_version = string
+  })
 }
 
 variable "cloudflare" {
-  type = map(string)
-  default = {
-    "token"   = ""
-    "zone_id" = ""
+  type = object({
+    token   = string
+    zone_id = string
+  })
+}
+
+variable "storage_classes" {
+  type = list(object({
+    name    = string
+    storage = string
+    type    = string
+    fstype  = optional(string, "ext4")
+  }))
+
+  default = []
+
+  validation {
+    condition = alltrue([
+      for sc in var.storage_classes : contains(["ssd", "hdd"], sc.type)
+    ])
+    error_message = "Storage type must be 'ssd' or 'hdd'"
   }
 }
