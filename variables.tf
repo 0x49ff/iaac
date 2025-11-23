@@ -19,6 +19,8 @@ variable "pve" {
     cidr              = string
     csi_id            = string
     csi_secret        = string
+    ccm_id            = string
+    ccm_secret        = string
   })
 }
 

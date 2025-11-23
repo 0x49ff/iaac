@@ -40,8 +40,8 @@ cluster:
           clusters:
             - url: https://${pve_node}:8006/api2/json
               insecure: true
-              token_id: "${csi_id}"
-              token_secret: "${csi_secret}"
+              token_id: "${ccm_id}"
+              token_secret: "${ccm_secret}"
               region: "${region}"
   - name: proxmox-csi-plugin
     contents: |-
