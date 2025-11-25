@@ -1,6 +1,6 @@
 # Talos cluster on Proxmox with Terraform
-Talos version - 1.9.1  
-Kubernetes version - 1.32.0
+Talos version - 1.11.5  
+Kubernetes version - 1.34.0
 
 # Deploy
 ```shell
@@ -8,7 +8,7 @@ terraform init -backend-config=state.config
 terraform apply -var-file=terraform.tfvars
 ```
 
-# Applications
+# Deployments
 Ingress NGINX  
 Metallb  
 Cilium  
@@ -16,7 +16,7 @@ CSI-Proxmox
 CCM-Proxmox  
 
 # Setting up users/tokens in Proxmox
-### Terraform
+# Terraform
 Create a user:
 ```shell
 sudo pveum user add terraform@pve
@@ -37,18 +37,25 @@ Create an API token for the user:
 sudo pveum user token add terraform@pve provider --privsep=0
 ```
 
-### CSI
-Create CSI role in Proxmox:
+# CSI, CCM
+Create CSI/CCM role in Proxmox:
 ```shell
-pveum role add CSI -privs "VM.Audit VM.Config.Disk Datastore.Allocate Datastore.AllocateSpace Datastore.Audit"
+pveum role add CSI -privs "VM.Audit VM.Config.Disk Datastore.Allocate Datastore.AllocateSpace Datastore.Audit Sys.Audit"
+pveum role add CCM -privs "VM.Audit Sys.Audit"
 ```
 
-Next create a user kubernetes-csi@pve for the CSI plugin and grant it the above role
+Next create a users csi@pve/ccm@pve for the CSI and CCM plugin, grant it the above role
 ```shell
-pveum user add kubernetes-csi@pve
-pveum aclmod / -user kubernetes-csi@pve -role CSI
-pveum user token add kubernetes-csi@pve csi -privsep 0
+pveum user add csi@pve
+pveum user add ccm@pve
+
+pveum aclmod / -user csi@pve -role CSI
+pveum aclmod / -user ccm@pve -role CCM
+
+pveum user token add csi@pve csi -privsep 0
+pveum user token add ccm@pve ccm -privsep 0
 ```
 
 # Sources
-[csi-proxmox](https://github.com/sergelogvinov/proxmox-csi-plugin/blob/main/docs/install.md)  
+[csi-proxmox](https://github.com/sergelogvinov/proxmox-csi-plugin/)  
+[ccm-proxmox](https://github.com/sergelogvinov/proxmox-cloud-controller-manager)
